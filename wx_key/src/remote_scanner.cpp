@@ -45,9 +45,17 @@ namespace {
 void VersionConfigManager::InitializeConfigs() {
     if (initialized) return;
 
-    // 微信 4.1.4 及以上配置（含 4.1.4.x、4.1.5.x 等）
+    // 微信 4.1.6.14 以上配置
     configs.push_back(WeChatVersionConfig(
-        ">=4.1.4",
+        ">4.1.6.14",
+        {0x83, 0xf8, 0x05, 0x00, 0x00, 0x48, 0x8b, 0x8b, 0x68, 0x05, 0x00, 0x00, 0x4c, 0x8b, 0xb4, 0x24, 0xd8, 0x00, 0x00, 0x00, 0x4c, 0x89, 0x74, 0x00},
+        "xxxxxxxxxxxxxxxxxxxxxxx?",
+        -3
+    ));
+
+    // 微信 4.1.4 至 4.1.6.14 配置（含 4.1.4.x、4.1.5.x、4.1.6.14）
+    configs.push_back(WeChatVersionConfig(
+        ">=4.1.4 && <=4.1.6.14",
         {0x24, 0x08, 0x48, 0x89, 0x6c, 0x24, 0x10, 0x48, 0x89, 0x74, 0x00, 0x18, 0x48, 0x89, 0x7c, 0x00, 0x20, 0x41, 0x56, 0x48, 0x83, 0xec, 0x50, 0x41},
         "xxxxxxxxxx?xxxx?xxxxxxxx",
         -3
@@ -67,7 +75,7 @@ void VersionConfigManager::InitializeConfigs() {
 const WeChatVersionConfig* VersionConfigManager::GetConfigForVersion(const std::string& version) {
     InitializeConfigs();
 
-    if (configs.size() < 2 || version.empty()) {
+    if (configs.size() < 3 || version.empty()) {
         return nullptr;
     }
 
@@ -77,14 +85,20 @@ const WeChatVersionConfig* VersionConfigManager::GetConfigForVersion(const std::
     }
 
     constexpr VersionArray baseline414 = {4, 1, 4, 0};
+    constexpr VersionArray baseline41614 = {4, 1, 6, 14};
 
-    if (CompareVersions(parsedVersion, baseline414) >= 0) {
+    if (CompareVersions(parsedVersion, baseline41614) > 0) {
         return &configs[0];
+    }
+
+    if (CompareVersions(parsedVersion, baseline414) >= 0 &&
+        CompareVersions(parsedVersion, baseline41614) <= 0) {
+        return &configs[1];
     }
 
     if ((parsedVersion[0] == 4 && parsedVersion[1] == 1 && parsedVersion[2] < 4) ||
         (parsedVersion[0] == 4 && parsedVersion[1] == 0)) {
-        return &configs[1];
+        return &configs[2];
     }
 
     return nullptr;
